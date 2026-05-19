@@ -5,7 +5,7 @@ import urllib.parse
 import hashlib
 import os
 
-# استيراد مكتبات التشفير المحترفة
+# استيراد مكتبات التشفير المحترفة المتاحة في النسخ الجديدة
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding as asym_padding
@@ -88,9 +88,10 @@ class CryptoToolkitApp:
                 cipher_algo = algorithms.AES(key)
                 block_size = 128
             elif algo == "DES":
-                key = self.pad_key(key_text, 8)  # 64 bits
+                # الخديعة: لأن الـ DES العادي محذوف، هنشغله عبر الـ TripleDES بمفتاح مكرر 3 مرات ليصبح 24 بايت ومتوافق أمنياً
+                key = self.pad_key(key_text, 8) * 3
                 iv = os.urandom(8)
-                cipher_algo = algorithms.DES(key)
+                cipher_algo = algorithms.TripleDES(key)
                 block_size = 64
             elif algo == "3DES":
                 key = self.pad_key(key_text, 24)  # 192 bits
@@ -105,7 +106,6 @@ class CryptoToolkitApp:
             encryptor = cipher.encryptor()
             ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
-            # دمج الـ IV مع النص المشفر وتشفيرهما بـ Base64 لسهولة العرض
             result = base64.b64encode(iv + ciphertext).decode()
             self.sym_output.delete(0, tk.END)
             self.sym_output.insert(0, result)
@@ -131,10 +131,10 @@ class CryptoToolkitApp:
                 cipher_algo = algorithms.AES(key)
                 block_size = 128
             elif algo == "DES":
-                key = self.pad_key(key_text, 8)
+                key = self.pad_key(key_text, 8) * 3  # نفس الخديعة في فك التشفير ليعمل بنجاح
                 iv = data[:8]
                 ciphertext = data[8:]
-                cipher_algo = algorithms.DES(key)
+                cipher_algo = algorithms.TripleDES(key)
                 block_size = 64
             elif algo == "3DES":
                 key = self.pad_key(key_text, 24)
@@ -306,7 +306,6 @@ class CryptoToolkitApp:
             salt = self.hash_salt.get().encode()
             if not salt:
                 messagebox.showwarning("Warning", "Salt is empty! Using default or empty salt.")
-            # دمج الملح مع النص ثم التجزئة بـ SHA-256
             res = hashlib.sha256(salt + inp).hexdigest()
 
         self.hash_output.delete(0, tk.END)
